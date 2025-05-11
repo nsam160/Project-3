@@ -1,0 +1,70 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Scatterplot Sandbox – Camille</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 20px;
+    }
+    label {
+      font-weight: bold;
+    }
+    .control-group {
+      margin-bottom: 15px;
+    }
+    #scatterplot {
+      margin-top: 30px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Scatterplot Debug View</h1>
+
+    <div style="display: flex; gap: 50px; align-items: flex-start; margin-bottom: 20px;">
+    <!-- Mouse 1 Panel -->
+    <div>
+        <label for="mouse1">Mouse 1:</label><br>
+        <select id="mouse1"></select>
+        <br><br>
+        <label for="days1Select">Days for Mouse 1:</label><br>
+        <select id="days1Select" multiple size="6" style="width: 120px;"></select>
+    </div>
+
+    <!-- Mouse 2 Panel -->
+    <div>
+        <label for="mouse2">Mouse 2:</label><br>
+        <select id="mouse2"></select>
+        <br><br>
+        <label for="days2Select">Days for Mouse 2:</label><br>
+        <select id="days2Select" multiple size="6" style="width: 120px;"></select>
+    </div>
+    </div>
+
+  <div class="control-group">
+    <label for="minuteSlider">Minute:</label>
+    <input type="range" id="minuteSlider" min="0" max="1440" value="720" step="1">
+    <span id="minuteLabel">720</span>
+  </div>
+
+  <div id="scatterplot"></div>
+
+  <div id="tooltip" style="
+    position: absolute;
+    opacity: 0;
+    background: white;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    padding: 6px;
+    font-size: 12px;
+    pointer-events: none;
+    box-shadow: 0px 0px 6px rgba(0,0,0,0.1);"
+></div>
+
+
+  <script type="module" src="./scatter_debug.js"></script>
+</body>
+</html>
