@@ -294,7 +294,7 @@ export function updateFocus(time) {
              hasGreen ? "bottom-right":"bottom-right");  
 
   placeLabel(tempLabel1, cxR, cyR,
-             d.avg_temp.toFixed(2),
+             d.avg_temp.toFixed(2) + "°C",
              hasGreen ? "bottom-right":"bottom-right");
 } else {
   actLabel1 .style("visibility","hidden");
@@ -317,7 +317,7 @@ if (hasGreen){
              g.avg_act.toFixed(1),
              hasPink ? "top-left":"bottom-right");   
   placeLabel(tempLabel2, cxR, cyR,
-             g.avg_temp.toFixed(2),
+             g.avg_temp.toFixed(2) + "°C",
              hasPink ? "top-left":"bottom-right");
 } else {
   actLabel2 .style("visibility","hidden");
