@@ -1,7 +1,16 @@
 import * as d3 from 'https://cdn.jsdelivr.net/npm/d3@7.9.0/+esm';
 
-const startOfDay = new Date(2000, 0, 1, 0, 0);   // 00:00
-const endOfDay = new Date(2000, 0, 1, 23, 59);   // 23:59
+export const startOfDay = new Date(2000, 0, 1, 0, 0);   // 00:00
+export const endOfDay = new Date(2000, 0, 1, 23, 59);   // 23:59
+
+let svg;                     // will hold the one <svg>
+let xScale, yScale;          // left panel   (Activity)
+let xScale2, yScale2;        // right panel  (Temperature)
+let focusGroup;              // <g> that carries the vertical line + dots
+let actDot1, actDot2, tempDot1, tempDot2;  
+let leftCursor, rightCursor;   // the two rulers
+let map1 = [], map2 = []; 
+let actLabel1, tempLabel1, actLabel2, tempLabel2; 
 
 async function loadData() {
     const parseTime = d3.timeParse("%Y-%m-%d %H:%M:%S");
@@ -94,8 +103,8 @@ function renderLinePlot(data){
     const width = 1000;
     const height = 500;
     const margin = { top: 40, right: 40, bottom: 40, left: 40 };
-    
-    const svg = d3
+    [map1, map2] = data; 
+    svg = d3
         .select('#chart')
         .append('svg')
         .attr('viewBox', `0 0 ${width} ${height}`)
@@ -109,12 +118,12 @@ function renderLinePlot(data){
         width: (width / 2) - margin.left - margin.right,
         height: (height / 2) - margin.top - margin.bottom,
     };
-    const xScale = d3
+    xScale = d3
         .scaleTime()
         .domain([startOfDay, endOfDay])
         .range([usableArea.left, usableArea.right])
         .nice();
-    const yScale = d3.scaleLinear().domain([0, 70]).range([usableArea.bottom, usableArea.top]);
+    yScale = d3.scaleLinear().domain([0, 70]).range([usableArea.bottom, usableArea.top]);
     svg.append("g")
         .attr("transform", `translate(0,${usableArea.bottom})`)
         .call(d3.axisBottom(xScale).tickFormat(d3.timeFormat("%H:%M")));
@@ -141,12 +150,12 @@ function renderLinePlot(data){
         width: (width / 2) - margin.left - margin.right,
         height: (height / 2) - margin.top - margin.bottom,
     };
-    const xScale2 = d3
+    xScale2 = d3
         .scaleTime()
         .domain([startOfDay, endOfDay])
         .range([usableArea2.left, usableArea2.right])
         .nice();
-    const yScale2 = d3.scaleLinear().domain([35, 40]).range([usableArea2.bottom, usableArea2.top]);
+    yScale2 = d3.scaleLinear().domain([35, 40]).range([usableArea2.bottom, usableArea2.top]);
     svg.append("g")
         .attr("transform", `translate(0,${usableArea2.bottom})`)
         .call(d3.axisBottom(xScale2).tickFormat(d3.timeFormat("%H:%M")));
@@ -204,7 +213,118 @@ function renderLinePlot(data){
             .attr("stroke-width", 2)
             .attr("d", lineTemp);
     }
+    focusGroup = svg.append("g").attr("class", "focus");
+
+    // left line
+    leftCursor = focusGroup.append("line")
+    .attr("class", "cursor-left")
+    .attr("y1", margin.top)
+    .attr("y2", height - margin.bottom)
+    .attr("stroke", "#444")
+    .attr("stroke-dasharray", "3,3");
+
+    // right line
+    rightCursor = focusGroup.append("line")
+    .attr("class", "cursor-right")
+    .attr("y1", margin.top)
+    .attr("y2", height - margin.bottom)
+    .attr("stroke", "#444")
+    .attr("stroke-dasharray", "3,3");
+
+    
+
+    leftCursor
+  .attr("x1", xScale(startOfDay))
+  .attr("x2", xScale(startOfDay));
+
+    rightCursor
+    .attr("x1", xScale2(startOfDay))    
+    .attr("x2", xScale2(startOfDay));
+    
+
+
+    actDot1  = focusGroup.append("circle").attr("r", 4).attr("fill", "black").style("visibility", "hidden");;   
+    tempDot1 = focusGroup.append("circle").attr("r", 4).attr("fill", "black").style("visibility", "hidden");;   
+    actDot2  = focusGroup.append("circle").attr("r", 4).attr("fill", "black").style("visibility", "hidden");;  
+    tempDot2 = focusGroup.append("circle").attr("r", 4).attr("fill", "black").style("visibility", "hidden");;
+
+    actLabel1  = focusGroup.append("text")
+              .attr("class","tooltip").style("font-size","10px")
+              .style("visibility","hidden");
+    tempLabel1 = focusGroup.append("text")
+                .attr("class","tooltip").style("font-size","10px")
+                .style("visibility","hidden");
+    actLabel2  = focusGroup.append("text")
+                .attr("class","tooltip").style("font-size","10px")
+                .style("visibility","hidden");
+    tempLabel2 = focusGroup.append("text")
+                .attr("class","tooltip").style("font-size","10px")
+                .style("visibility","hidden");
 }
+
+export function updateFocus(time) {
+  if (!focusGroup) return;          
+    const hasPink  = map1.length   > 0;
+    const hasGreen = map2.length   > 0;
+  const xLeft  = xScale(time);
+  const xRight = xScale2(time);
+  leftCursor
+    .attr("x1", xLeft)
+    .attr("x2", xLeft);  
+
+    rightCursor
+    .attr("x1", xRight)
+    .attr("x2", xRight);
+
+ 
+  const bisect = d3.bisector(d => d.date).left;
+  if (hasPink){
+  const i1   = bisect(map1, time, 1);
+  const dL   = map1[i1 - 1], dR = map1[i1] || dL;
+  const d    = (time - dL.date) < (dR.date - time) ? dL : dR;
+
+  const cxL = xLeft,  cyL = yScale(d.avg_act);
+  const cxR = xRight, cyR = yScale2(d.avg_temp);
+
+  actDot1 .attr("cx", cxL).attr("cy", cyL);
+  tempDot1.attr("cx", cxR).attr("cy", cyR);
+
+  placeLabel(actLabel1 , cxL, cyL,
+             d.avg_act.toFixed(1),               
+             hasGreen ? "bottom-right":"bottom-right");  
+
+  placeLabel(tempLabel1, cxR, cyR,
+             d.avg_temp.toFixed(2),
+             hasGreen ? "bottom-right":"bottom-right");
+} else {
+  actLabel1 .style("visibility","hidden");
+  tempLabel1.style("visibility","hidden");
+}
+
+
+if (hasGreen){
+  const i2   = bisect(map2, time, 1);
+  const gL   = map2[i2 - 1], gR = map2[i2] || gL;
+  const g    = (time - gL.date) < (gR.date - time) ? gL : gR;
+
+  const cxL = xLeft,  cyL = yScale(g.avg_act);
+  const cxR = xRight, cyR = yScale2(g.avg_temp);
+
+  actDot2 .attr("cx", cxL).attr("cy", cyL);
+  tempDot2.attr("cx", cxR).attr("cy", cyR);
+
+  placeLabel(actLabel2 , cxL, cyL,
+             g.avg_act.toFixed(1),
+             hasPink ? "top-left":"bottom-right");   
+  placeLabel(tempLabel2, cxR, cyR,
+             g.avg_temp.toFixed(2),
+             hasPink ? "top-left":"bottom-right");
+} else {
+  actLabel2 .style("visibility","hidden");
+  tempLabel2.style("visibility","hidden");
+}
+}
+
 
 let data = await loadData();
 renderLinePlot(filtering(data));
@@ -225,3 +345,14 @@ document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
 //     });
 //     renderLinePlot(filteredData);
 // });
+
+function placeLabel(label, cx, cy, text, where){
+  const dx = 6, dy = 6;          
+  if (where === "top-left"){
+    label.attr("x", cx - dx).attr("y", cy - dy);
+  } else { 
+    label.attr("x", cx + dx).attr("y", cy + dy + 8); 
+  }
+  label.text(text).style("visibility","visible");
+}
+    
