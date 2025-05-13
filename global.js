@@ -83,48 +83,52 @@ function dropboxFiltering() {
     }
 }
 
-export function filterByMinute(data, dateVal) {
-    const minuteIndex = dateVal.getHours() * 60 + dateVal.getMinutes();
+export function filterByMinute(data, dateVal, useZScore = false) {
+    const minuteIndex = dateVal.getHours()*60 + dateVal.getMinutes();
 
-    const femaleSelected = document.querySelectorAll('#mouse-selector input[type="checkbox"]');
-    const femaleIds = [];
-    femaleSelected.forEach(f => {
-        if (f.checked){
-            femaleIds.push(+f.id.slice(1));
-        } 
-    });
+    const femaleIds = [...document.querySelectorAll('#mouse-selector input:checked')]
+                      .map(cb => +cb.id.slice(1));
+    const line1Days = [...document.querySelectorAll('#pink  input:checked')].map(cb => +cb.id.slice(1));
+    const line2Days = [...document.querySelectorAll('#green input:checked')].map(cb => +cb.id.slice(1));
 
-    const line1Selected = document.querySelectorAll('#pink input[type="checkbox"]');
-    const line1Days = [];
-    line1Selected.forEach(p => {
-        if (p.checked){
-            line1Days.push(+p.id.slice(1));
-        }
-    });
+    const dots   = [];
+    const unique = [];
+    
+    let stats = {};
+    if (useZScore) {
+        stats = d3.rollups(
+            data,
+            v => ({
+                tMean : d3.mean(v, d => d.Temp),
+                tStd  : d3.deviation(v, d => d.Temp) || 1,
+                aMean : d3.mean(v, d => d.Act),
+                aStd  : d3.deviation(v, d => d.Act) || 1
+            }),
+            d => d.id
+        ).reduce((obj,[id,s]) => (obj[id]=s,obj),{});
+    }
 
-    const line2Selected = document.querySelectorAll('#green input[type="checkbox"]');
-    const line2Days = [];
-    line2Selected.forEach(g => {
-        if (g.checked){
-            line2Days.push(+g.id.slice(1));
-        }
-    });
-
-    let dots = [];
-    let unique = [];
-     data.forEach(row => {
+    data.forEach(row => {
         if ( row.minutes === minuteIndex &&
              femaleIds.includes(row.id) &&
-             ( line1Days.includes(row.days + 1) ||
-               line2Days.includes(row.days + 1) ) ) {
+             ( line1Days.includes(row.days+1) || line2Days.includes(row.days+1) ) ) {
 
-            dots.push(row);
+            const rec = useZScore
+              ? {
+                    ...row,
+                    Temp : (row.Temp - stats[row.id].tMean)/stats[row.id].tStd,
+                    Act  : (row.Act  - stats[row.id].aMean)/stats[row.id].aStd
+                }
+              : row;
+
+            dots.push(rec);
             if (!unique.includes(row.id)) unique.push(row.id);
         }
     });
 
     return [dots, unique];
 }
+
 
 
 
