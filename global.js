@@ -625,16 +625,16 @@ function renderLinePlot(data){
 
     actLabel1  = focusGroup.append("text")
               .attr("class","tooltip").style("font-size","10px")
-              .style("visibility","hidden");
+              .style("visibility","visible");
     tempLabel1 = focusGroup.append("text")
                 .attr("class","tooltip").style("font-size","10px")
-                .style("visibility","hidden");
+                .style("visibility","visible");
     actLabel2  = focusGroup.append("text")
                 .attr("class","tooltip").style("font-size","10px")
-                .style("visibility","hidden");
+                .style("visibility","visible");
     tempLabel2 = focusGroup.append("text")
                 .attr("class","tooltip").style("font-size","10px")
-                .style("visibility","hidden");
+                .style("visibility","visible");
 }
 
 export function updateFocus(time) {
@@ -700,10 +700,19 @@ if (hasGreen){
 }
 }
 
-
+dropboxFiltering();
 export let data = await loadData();
 renderLinePlot(filtering(data));
 renderScatterplot(filterByMinute(data, startOfDay));
+
+const initDate = startOfDay;                                 // a Date(2000-01-01 00:00)
+
+updateFocus(initDate);                                      
+
+const useZ = document.getElementById('zscoreToggle')?.checked ?? false;
+renderScatterplot( filterByMinute(data, initDate, useZ), useZ );
+
+d3.select('#time-label').text( d3.timeFormat("%-I:%M %p")(initDate) );
 
 document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
     checkbox.addEventListener('change', () => {
@@ -712,7 +721,10 @@ document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
         document.getElementById("dropbox-select").value = "o3";
         renderLinePlot(filtering(data));
         const currTime = timeSlide.value();
-        renderScatterplot(filterByMinute(data, currTime));
+        const useZ     = document.getElementById('zscoreToggle').checked;
+        renderScatterplot( filterByMinute(data, currTime, useZ), useZ );
+
+
     });
 });
 

@@ -28,6 +28,8 @@ const svg = d3.select('#year-slider')
   .append('svg')
     .attr('width', 950)
     .attr('height', 65);
+    
+
 
 svg.append('g')
    .attr('transform', 'translate(30,30)')
@@ -35,4 +37,13 @@ svg.append('g')
 
 d3.select("#time-label").text(timeFormat(startOfDay));
 
+zToggle.addEventListener('change', redrawScatter);
 
+function redrawScatter(){
+    const minute = timeSlide.value();                       // stay on same time
+    const useZ   = zToggle.checked;
+
+    d3.select('#scatterplot').selectAll('*').remove();
+    renderScatterplot( filterByMinute(data, minute, useZ),  // dots
+                       useZ );                              // axis + title
+}
