@@ -4,6 +4,7 @@ import { sliderBottom } from 'https://esm.sh/d3-simple-slider@2.0.0';
 import { updateFocus, filterByMinute, renderScatterplot, data} from './global.js';
 const startOfDay = new Date(2000, 0, 1, 0, 0);
 const endOfDay = new Date(2000, 0, 1, 23, 59);
+const zToggle = document.getElementById('zscoreToggle');
 
 const timeFormat = d3.timeFormat("%-I:%M %p");   // 1:05 PM
 
@@ -18,8 +19,9 @@ export const timeSlide = sliderBottom()
   .on('onchange', val => {
     d3.select("#time-label").text(timeFormat(val));
     updateFocus(val);
+    const useZ = zToggle.checked;
     d3.select("#scatterplot").selectAll("*").remove();
-    renderScatterplot(filterByMinute(data, val));
+    renderScatterplot( filterByMinute(data, val, useZ), useZ );
   });
 
 const svg = d3.select('#year-slider')

@@ -206,15 +206,29 @@ function filtering(data) {
     return [map1, map2];
 }
 
-export function renderScatterplot(data){
-    let mouseColorMap = {1: '#8dd3c7', 2: '#9c755f', 3: '#bebada', 4: '#fb8072', 5: '80b1d3', 6: '#fdb462', 7: '#b3de69', 8: '#fccde5', 9: '#bab0ab', 10: '#bc80bd', 11: '#ccebc5', 12: '#ffed6f', 13: '#816b01'}
+export function renderScatterplot([dots, uniqueMouseIds], useZScore) {
+    let mouseColorMap = {
+        1: '#8dd3c7', 2: '#9c755f', 3: '#bebada', 4: '#fb8072', 5: '#80b1d3',
+        6: '#fdb462', 7: '#b3de69', 8: '#fccde5', 9: '#bab0ab', 10: '#bc80bd',
+        11: '#ccebc5', 12: '#ffed6f', 13: '#816b01'
+    };
+
     mouseColorMap = Object.fromEntries(
-        Object.entries(mouseColorMap).filter(([key]) => data[1].includes(+key))
+        Object.entries(mouseColorMap).filter(([key]) => uniqueMouseIds.includes(+key))
     );
+
+    // Get the phase for each day
+    const phaseMap = {
+        0: 'Unknown',
+        1: 'Proestrus', 5: 'Proestrus', 9: 'Proestrus', 13: 'Proestrus',
+        2: 'Estrus', 6: 'Estrus', 10: 'Estrus', 14: 'Estrus',
+        3: 'Metestrus', 7: 'Metestrus', 11: 'Metestrus',
+        4: 'Diestrus', 8: 'Diestrus', 12: 'Diestrus'
+    };
 
     const width = 1000;
     const height = 350;
-    const margin = { top: 40, right: 40, bottom: 40, left: 40 };
+    const margin = { top: 40, right: 150, bottom: 50, left: 60 }; // Increased margins
     const usableArea = {
         top: margin.top,
         right: width - margin.right,
@@ -223,125 +237,203 @@ export function renderScatterplot(data){
         width: width - margin.left - margin.right,
         height: height - margin.top - margin.bottom,
     };
-    let minAvgAct = -1;
-    let maxAvgAct = 150;
-    let minAvgTemp = 35;
-    let maxAvgTemp = 40;
 
-    const xScale = d3.scaleLinear().domain([minAvgAct, maxAvgAct]).range([usableArea.left, usableArea.right]);
-    const yScale = d3.scaleLinear().domain([minAvgTemp, maxAvgTemp]).range([usableArea.bottom, usableArea.top]);
+    // Calculate the extent of the data with padding
+    const xExtent = d3.extent(dots, d => d.Act);
+    const yExtent = d3.extent(dots, d => d.Temp);
+    
+    // Add 10% padding to the domain to ensure points don't hit the edges
+    const xPadding = (xExtent[1] - xExtent[0]) * 0.05;
+    const yPadding = (yExtent[1] - yExtent[0]) * 0.05;
+    
+    const xScale = d3.scaleLinear()
+        .domain([xExtent[0] - xPadding, xExtent[1] + xPadding])
+        .nice()
+        .range([usableArea.left, usableArea.right]);
+    
+    const yScale = d3.scaleLinear()
+        .domain([yExtent[0] - yPadding, yExtent[1] + yPadding])
+        .nice()
+        .range([usableArea.bottom, usableArea.top]);
 
+    // Clear previous SVG content
+    d3.select('#scatterplot').selectAll("*").remove();
+    
     const svg = d3
         .select('#scatterplot')
         .append('svg')
         .attr('viewBox', `0 0 ${width} ${height}`)
         .style('overflow', 'visible');
 
-    const dots = svg.append('g').attr('class', 'dots');
-    const tooltip = d3.select("#tooltip");
-    dots.selectAll("circle")
-        .data(data[0])
-        .join('circle')
-        .attr("cx", d => xScale(d.Act))
-        .attr("cy", d => yScale(d.Temp))
-        .attr("r", 5)
-        .attr("fill", d => mouseColorMap[d.id])
-        .style('fill-opacity', 0.7)
-        .on('mouseenter', function(event, d) {
-            d3.select(this)
-                .transition()
-                .duration(150)
-                .attr("r", 7)
-                .style('fill-opacity', 1);
-            tooltip.transition().duration(200).style("opacity", 0.9);
-            tooltip.html(`
-                <strong>Mouse:</strong> ${d.id}<br>
-                <strong>Day:</strong> ${d.days}<br>
-                <strong>Temp:</strong> ${d.Temp} °C<br>
-                <strong>Activity:</strong> ${d.Act}
-            `).style("left", (event.pageX + 10) + "px").style("top", (event.pageY - 28) + "px");
-        })
-        .on('mouseleave', function(event) {
-            d3.select(this)
-                .transition()
-                .duration(150)
-                .attr("r", 5)
-                .style('fill-opacity', 0.7);
-            tooltip.transition().duration(300).style("opacity", 0);
-        });
-    
-     // X Grid lines
+    // Add a title to the scatterplot
+    svg.append("text")
+        .attr("class", "chart-title")
+        .attr("text-anchor", "middle")
+        .attr("x", width / 2)
+        .attr("y", margin.top / 2)
+        .style("font-size", "14px")
+        .style("font-weight", "bold")
+        .text(`Mouse Data at ${timeSlide.value()} (${useZScore ? "Z-Score Normalized" : "Raw Values"})`);
+
+    // Add background for better visibility
+    svg.append("rect")
+        .attr("x", usableArea.left)
+        .attr("y", usableArea.top)
+        .attr("width", usableArea.width)
+        .attr("height", usableArea.height)
+        .attr("fill", "#f9f9f9")
+        .attr("stroke", "#ddd")
+        .attr("stroke-width", 0.5);
+
+    // X Grid lines
     svg.append("g")
-    .attr("class", "x-grid")
-    .attr("transform", `translate(0,${usableArea.bottom})`)
-    .call(
-        d3.axisBottom(xScale)
-            .tickSize(-usableArea.height)
-            .tickFormat("")
+        .attr("class", "x-grid")
+        .attr("transform", `translate(0,${usableArea.bottom})`)
+        .call(
+            d3.axisBottom(xScale)
+                .tickSize(-usableArea.height)
+                .tickFormat("")
         )
-    .selectAll("line")
-    .attr("stroke", "rgba(0,0,0,0.1)");
+        .selectAll("line")
+        .attr("stroke", "rgba(0,0,0,0.1)");
 
     // Y Grid lines
     svg.append("g")
-    .attr("class", "y-grid")
-    .attr("transform", `translate(${usableArea.left},0)`)
-    .call(
-        d3.axisLeft(yScale)
-            .tickSize(-usableArea.width)
-            .tickFormat("")
+        .attr("class", "y-grid")
+        .attr("transform", `translate(${usableArea.left},0)`)
+        .call(
+            d3.axisLeft(yScale)
+                .tickSize(-usableArea.width)
+                .tickFormat("")
         )
-    .selectAll("line")
-    .attr("stroke", "rgba(0,0,0,0.1)");
+        .selectAll("line")
+        .attr("stroke", "rgba(0,0,0,0.1)");
 
-    svg.selectAll(".x-grid path, .y-grid path")
-    .remove();
+    svg.selectAll(".x-grid path, .y-grid path").remove();
 
-    
+    const tooltip = d3.select("#tooltip");
+
+    // Calculate jitter amount based on domain size (smaller jitter for z-scores)
+    const xJitterAmount = useZScore ? 0.05 : 1;
+    const yJitterAmount = useZScore ? 0.05 : 0.1;
+
+    svg.selectAll("circle")
+        .data(dots)
+        .join("circle")
+        .attr("cx", d => {
+            // Apply appropriate jitter based on whether we're using z-scores
+            const jitter = (Math.random() - 0.5) * xJitterAmount;
+            const value = d.Act + jitter;
+            // Ensure the point stays within bounds
+            return xScale(Math.max(xExtent[0] - xPadding/2, Math.min(value, xExtent[1] + xPadding/2)));
+        })
+        .attr("cy", d => {
+            // Apply appropriate jitter based on whether we're using z-scores
+            const jitter = (Math.random() - 0.5) * yJitterAmount;
+            const value = d.Temp + jitter;
+            // Ensure the point stays within bounds
+            return yScale(Math.max(yExtent[0] - yPadding/2, Math.min(value, yExtent[1] + yPadding/2)));
+        })
+        .attr("r", 5)
+        .attr("fill", d => mouseColorMap[d.id])
+        .style("fill-opacity", 0.7)
+        .style("stroke", "#333")  // Add border
+        .style("stroke-width", 0.5)
+        .on("mouseenter", (event, d) => {
+            d3.select(event.currentTarget)
+                .style("fill-opacity", 1)
+                .attr("r", 7)
+                .style("stroke-width", 1.5);
+
+            tooltip.transition().duration(200).style("opacity", 0.9);
+            tooltip.html(`
+                <div style="background-color: ${mouseColorMap[d.id]}; color: white; padding: 4px 8px; margin-bottom: 4px; border-radius: 3px;">
+                    <strong>Mouse ${d.id}</strong>
+                </div>
+                <strong>Day:</strong> ${d.days + 1} (${phaseMap[d.days + 1] || 'Unknown Phase'})<br>
+                <strong>Time:</strong> ${formatTime(d.minutes)}<br>
+                <strong>Temperature:</strong> ${d.Temp.toFixed(2)}${useZScore ? ' (z-score)' : ' °C'}<br>
+                <strong>Activity:</strong> ${d.Act.toFixed(2)}${useZScore ? ' (z-score)' : ''}
+            `).style("left", (event.pageX + 10) + "px")
+              .style("top", (event.pageY - 28) + "px")
+              .style("box-shadow", "0px 2px 5px rgba(0,0,0,0.2)");
+        })
+        .on("mouseleave", (event) => {
+            d3.select(event.currentTarget)
+                .style("fill-opacity", 0.7)
+                .attr("r", 5)
+                .style("stroke-width", 0.5);
+            tooltip.transition().duration(300).style("opacity", 0);
+        });
+
+    // Axes with better formatting
     svg.append("g")
         .attr("transform", `translate(0,${usableArea.bottom})`)
-        .call(d3.axisBottom(xScale));
+        .call(d3.axisBottom(xScale).ticks(10))
+        .call(g => g.select(".domain").attr("stroke", "#333").attr("stroke-width", 1.5));
+
     svg.append("g")
         .attr("transform", `translate(${usableArea.left},0)`)
-        .call(d3.axisLeft(yScale));
+        .call(d3.axisLeft(yScale).ticks(8))
+        .call(g => g.select(".domain").attr("stroke", "#333").attr("stroke-width", 1.5));
+
+    // Labels with better positioning
     svg.append("text")
         .attr("text-anchor", "middle")
         .attr("x", usableArea.left + usableArea.width / 2)
-        .attr("y", height - 5)
-        .text("Activity");
+        .attr("y", height - 10)
+        .style("font-size", "12px")
+        .style("font-weight", "bold")
+        .text(useZScore ? "Z-Scored Activity" : "Activity");
+
     svg.append("text")
         .attr("text-anchor", "middle")
         .attr("transform", `rotate(-90)`)
-        .attr("x", -height/2)
-        .attr("y", 5) 
-        .text("Temperature (°C)");
+        .attr("x", -usableArea.top - usableArea.height / 2)
+        .attr("y", 15)
+        .style("font-size", "12px")
+        .style("font-weight", "bold")
+        .text(useZScore ? "Z-Scored Temperature" : "Temperature (°C)");
+
+    // Legend with improved styling - moved to the right side
+    const legendBg = svg.append("rect")
+        .attr("x", usableArea.right + 10)
+        .attr("y", usableArea.top)
+        .attr("width", 130)
+        .attr("height", Object.keys(mouseColorMap).length * 20 + 30)
+        .attr("fill", "white")
+        .attr("stroke", "#ccc")
+        .attr("stroke-width", 1)
+        .attr("rx", 5)
+        .attr("ry", 5);
+
+    const legendTitle = svg.append("text")
+        .attr("x", usableArea.right + 70)
+        .attr("y", usableArea.top + 15)
+        .attr("text-anchor", "middle")
+        .text("Mouse Legend")
+        .style("font-size", "12px")
+        .style("font-weight", "bold");
 
     const legend = svg.append("g")
         .attr("class", "legend")
-        .attr("transform", `translate(${usableArea.right - 60}, ${usableArea.top + 10})`);
-    const mouseIDs = Object.keys(mouseColorMap).map(d => +d);
-    
-    legend.selectAll("legend-item")
-        .data(mouseIDs)
-        .join("g")
-        .attr("class", "legend-item")
-        .attr("transform", (d, i) => `translate(0, ${i * 20})`)
-        .each(function(d) {
-            d3.select(this)
-                .append("circle")
-                .attr("cx", 0)
-                .attr("cy", 0)
-                .attr("r", 5)
-                .attr("fill", mouseColorMap[d]);
+        .attr("transform", `translate(${usableArea.right + 20}, ${usableArea.top + 30})`);
 
-            d3.select(this)
-                .append("text")
-                .attr("x", 10)
-                .attr("y", 4)
-                .text(`Mouse ${d}`)
-                .style("font-size", "11px");
+    Object.entries(mouseColorMap).forEach(([id, color], i) => {
+        const g = legend.append("g").attr("transform", `translate(0, ${i * 20})`);
+        g.append("circle")
+            .attr("r", 5)
+            .attr("fill", color)
+            .style("stroke", "#333")
+            .style("stroke-width", 0.5);
+        g.append("text")
+            .attr("x", 15)
+            .attr("y", 5)
+            .text(`Mouse ${id}`)
+            .style("font-size", "11px");
     });
 }
+
 
 function renderLinePlot(data){
     const width = 1000;
