@@ -719,8 +719,9 @@ document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
         d3.select("#chart").selectAll("*").remove();
         d3.select("#scatterplot").selectAll("*").remove();
         document.getElementById("dropbox-select").value = "o3";
-        renderLinePlot(filtering(data));
         const currTime = timeSlide.value();
+        renderLinePlot(filtering(data));  
+        updateFocus(currTime); 
         const useZ     = document.getElementById('zscoreToggle').checked;
         renderScatterplot( filterByMinute(data, currTime, useZ), useZ );
 
