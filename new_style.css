@@ -520,3 +520,11 @@ footer {
 
 .d3-slider-tick line   { stroke:#b0b0b0; }
 .d3-slider-tick text   { fill:#555; font-size:11px; }
+
+#year-slider{
+    width: 100%;          /* take the full width of the card / column */
+}
+#year-slider svg{
+    width: 100%;          /* let the browser scale the SVG */
+    height: 65px;         /* keep the knob easy to grab   */
+}

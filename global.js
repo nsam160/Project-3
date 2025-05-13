@@ -736,7 +736,10 @@ dropboxSelect.addEventListener('change', () => {
     dropboxFiltering();
     renderLinePlot(filtering(data));
     const currTime = timeSlide.value();
-    renderScatterplot(filterByMinute(data, currTime));
+    updateFocus(currTime);
+    const useZ = document.getElementById('zscoreToggle').checked;
+    renderScatterplot( filterByMinute(data, currTime, useZ), useZ );
+
 });
 
 
