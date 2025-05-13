@@ -414,7 +414,23 @@ function renderLinePlot(data){
         .scaleLinear()
         .domain([minAvgTemp, maxAvgTemp])
         .range([usableArea2.bottom, usableArea2.top]);
-
+    svg.append("g")
+        .attr("transform", `translate(0,${usableArea2.bottom})`)
+        .call(d3.axisBottom(xScale2).tickFormat(d3.timeFormat("%H:%M")));
+    svg.append("g")
+        .attr("transform", `translate(${usableArea2.left},0)`)
+        .call(d3.axisLeft(yScale2));
+    svg.append("text")
+        .attr("text-anchor", "middle")
+        .attr("x", usableArea2.left + usableArea2.width / 2)
+        .attr("y", height - 5)
+        .text("24-Hour Time (HH:MM)");
+    svg.append("text")
+        .attr("text-anchor", "middle")
+        .attr("transform", `rotate(-90)`)
+        .attr("x", -height/2)
+        .attr("y", 5 + width/2) 
+        .text("Average Temperature");
     yScale.ticks(13).forEach(tickValue =>
         svg.append("line")
             .attr("class", "grid-line")
