@@ -203,9 +203,9 @@ export function renderScatterplot([dots, uniqueMouseIds], useZScore) {
     let mouseColorMap = {
         1: '#8dd3c7', 2: '#9c755f', 3: '#bebada', 4: '#fb8072', 5: '#80b1d3',
         6: '#fdb462', 7: '#b3de69', 8: '#fccde5', 9: '#bab0ab', 10: '#bc80bd',
-        11: '#ccebc5', 12: '#ffed6f', 13: '#816b01'
+        11: '#ccebc5', 12: '#ffed6f', 13: '#d1a0a3'
     };
-
+    
     mouseColorMap = Object.fromEntries(
         Object.entries(mouseColorMap).filter(([key]) => uniqueMouseIds.includes(+key))
     );
@@ -341,7 +341,7 @@ export function renderScatterplot([dots, uniqueMouseIds], useZScore) {
             tooltip.transition().duration(200).style("opacity", 0.9);
             tooltip.html(`
                 <div style="background-color: ${mouseColorMap[d.id]}; color: white; padding: 4px 8px; margin-bottom: 4px; border-radius: 3px;">
-                    <strong>Mouse ${d.id}</strong>
+                    <strong>No. ${d.id}</strong>
                 </div>
                 <strong>Day:</strong> ${d.days + 1} (${phaseMap[d.days + 1] || 'Unknown Phase'})<br>
                 <strong>Time:</strong> ${formatTime(d.minutes)}<br>
@@ -422,7 +422,7 @@ export function renderScatterplot([dots, uniqueMouseIds], useZScore) {
         g.append("text")
             .attr("x", 15)
             .attr("y", 5)
-            .text(`Mouse ${id}`)
+            .text(`No. ${id}`)
             .style("font-size", "11px");
     });
 }
