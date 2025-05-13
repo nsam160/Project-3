@@ -11,7 +11,8 @@ let actDot1, actDot2, tempDot1, tempDot2;
 let leftCursor, rightCursor;   // the two rulers
 let map1 = [], map2 = []; 
 let actLabel1, tempLabel1, actLabel2, tempLabel2; 
-
+const initTime = timeSlide.value();               // == startOfDay
+updateFocus(initTime);   
 export async function loadData() {
     const parseTime = d3.timeParse("%Y-%m-%d %H:%M:%S");
     const data = await d3.csv('female.csv', (row) => ({

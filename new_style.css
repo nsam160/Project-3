@@ -473,7 +473,7 @@ footer {
     background:#ffffff;
     border-radius:4px;
     box-shadow:0 0 4px rgba(0,0,0,0.05);
-    width: 500;                 /* stretch to container */
+    width: 100%;                 /* stretch to container */
 }
 
 /* label on the left */
@@ -521,10 +521,8 @@ footer {
 .d3-slider-tick line   { stroke:#b0b0b0; }
 .d3-slider-tick text   { fill:#555; font-size:11px; }
 
-#year-slider{
-    width: 100%;          /* take the full width of the card / column */
-}
-#year-slider svg{
-    width: 100%;          /* let the browser scale the SVG */
-    height: 65px;         /* keep the knob easy to grab   */
-}
+#year-slider           { width: 100%; }
+#year-slider svg       { width: 100%; height: 65px; }
+
+/* keep the pill label snug against the right edge */
+#time-label            { white-space: nowrap; }
