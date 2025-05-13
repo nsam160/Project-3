@@ -433,3 +433,33 @@ footer {
         margin-bottom: 20px;
     }
 }
+
+/* === D3 slider theme === */
+.d3-slider-horizontal .track,
+.d3-slider-horizontal .track-inset,
+.d3-slider-horizontal .track-overlay {
+    height: 7px;                     /* same height as #minuteSlider */
+    rx: 4px;
+    ry: 4px;
+}
+
+.d3-slider-horizontal .track {
+    fill: #e0e0e0;                   /* grey background */
+}
+
+.d3-slider-horizontal .track-fill {
+    fill: #3498db;                   /* blue progress bar */
+}
+
+.d3-slider-handle {
+    /* slider knob */
+    stroke: #3498db;
+    fill: #3498db;
+    r: 8px;                          /* radius */
+    cursor: pointer;
+}
+
+.d3-slider-tick text {
+    font-size: 0.75rem;
+    fill: #555;
+}

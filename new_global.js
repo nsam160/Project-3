@@ -587,7 +587,6 @@ function renderLinePlot(data){
 dropboxFiltering();
 
 let data = await loadData();
-renderLinePlot(filtering(data));
 renderScatterplot(filterByMinute(data, document.getElementById("zscoreToggle").checked));
 
 document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
